@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package telemetry;
+
+option go_package = "github.com/naufilf/thermal-watchdog/proto/telemetry";
+
+message TelemetryReport {
+    string node_id = 1;
+}

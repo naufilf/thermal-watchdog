@@ -1,0 +1,8 @@
+bazel-*
+
+
+*.exe
+
+
+.vscode/
+.idea/
