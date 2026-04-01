@@ -5,7 +5,7 @@ go_library(
     srcs = ["main.go"],
     importpath = "github.com/naufilf/thermal-watchdog/server",
     visibility = ["//visibility:private"],
-    deps = ["//proto:telemetry"],
+    deps = ["//proto:telemetry", "@org_golang_google_grpc//:go_default_library",],
 )
 
 go_binary(

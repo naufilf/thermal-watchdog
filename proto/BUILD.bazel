@@ -13,6 +13,7 @@ proto_library(
 
 go_proto_library(
     name = "telemetry_go_proto",
+    compilers = ["@rules_go//proto:go_grpc"],
     importpath = "github.com/naufilf/thermal-watchdog/proto/telemetry",
     proto = ":telemetry_proto",
     visibility = ["//visibility:public"],
