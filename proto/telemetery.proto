@@ -4,6 +4,17 @@ package telemetry;
 
 option go_package = "github.com/naufilf/thermal-watchdog/proto/telemetry";
 
+import "google/protobuf/timestamp.proto";
+
 message TelemetryReport {
-    string node_id = 1;
+  string node_id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  float gpu_temperature_celsius = 3;
+}
+
+// Placeholder response for when stream closes
+message StreamResponse { int32 messages_processed = 1; }
+
+service ThermalWatchdog {
+  rpc StreamTelemetry(stream TelemetryReport) returns (StreamResponse);
 }

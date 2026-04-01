@@ -6,6 +6,9 @@ proto_library(
     name = "telemetry_proto",
     srcs = ["telemetery.proto"],
     visibility = ["//visibility:public"],
+    deps = [
+        "@protobuf//:timestamp_proto",
+    ],
 )
 
 go_proto_library(
