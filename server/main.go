@@ -13,11 +13,12 @@ import (
 // Implements gRPC interface that is auto-generated
 type WatchdogServer struct {
 	pb.UnimplementedThermalWatchdogServer
+	stateManager *StateManager
 }
 
 // The method gRPC auto calls when a node connects
 func (s *WatchdogServer) StreamTelemetry(stream pb.ThermalWatchdog_StreamTelemetryServer) error {
-	var messagesProcessed int32 = 0;
+	var messagesProcessed int32 = 0
 
 	// Loop that infinitely catches data
 	for {
@@ -39,6 +40,7 @@ func (s *WatchdogServer) StreamTelemetry(stream pb.ThermalWatchdog_StreamTelemet
 
 		// Case 3: Succesfuly recieved a telemetry report
 		messagesProcessed++
+		s.stateManager.Update(report.NodeId, report.GpuTemperatureCelsius)
 		log.Printf("[Node: %s] Temp: %.2f°C", report.NodeId, report.GpuTemperatureCelsius)
 
 	} 
@@ -54,8 +56,13 @@ func main() {
 	// gRPC server engine creation
 	grpcServer := grpc.NewServer()
 
-	// Register the custom Watchdog implementation with the engine
-	pb.RegisterThermalWatchdogServer(grpcServer, &WatchdogServer{})
+	// Create state manager
+	sm := NewStateManager()
+
+	// Register the custom Watchdog implementation with the engine, also inject stateManager
+	pb.RegisterThermalWatchdogServer(grpcServer, &WatchdogServer{
+		stateManager: sm,
+	})
 
 	log.Println("Thermal Watchdog listening on port 50051...")
 
