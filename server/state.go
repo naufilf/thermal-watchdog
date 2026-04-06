@@ -7,9 +7,14 @@ import(
 )
 
 // Respresents the current snapshot of a single TPU server in memory
-type NodeState struct {
+type TempReading struct {
 	LatestTemp float32
 	LastSeen time.Time
+}
+
+// Maintains a sliding window of snapshots of a node
+type NodeState struct {
+	History []TempReading
 }
 
 // Holds global map of all nodes connected to ingestion service
@@ -40,11 +45,31 @@ func (sm *StateManager) Update(nodeId string, temp float32) {
 	}
 
 	// Case 2: Update node status
-	sm.nodes[nodeId].LatestTemp = temp
-	sm.nodes[nodeId].LastSeen = time.Now()
+	history := sm.nodes[nodeId].History
+	history = append(history, TempReading{LatestTemp: temp, LastSeen: time.Now()})
+
+	// Remove snapshots older than 10 seconds from History
+	cutoffIndex := 0
+	for index, reading := range history {
+		if (time.Since(reading.LastSeen) > 10 * time.Second) {
+			// The reading is too old, the cutoff point moves up
+			cutoffIndex = index + 1
+		} else {
+			// Hit the first time valid reading
+			break
+		}
+	}
+
+	// Update slice header stored in map to be same as our time adjusted slice header
+	sm.nodes[nodeId].History = history[cutoffIndex:]
 	
 	// Logging
-	log.Printf("Map stored node [%s] with temp: %.2f and last seen: %v", nodeId, sm.nodes[nodeId].LatestTemp, sm.nodes[nodeId].LastSeen)
+	log.Printf("Map stored node [%s], there are currently %v snapshots of the node", nodeId, len(sm.nodes[nodeId].History))
+
+	// Critical overheatting error log
+	if (calcAvg(sm.nodes[nodeId].History) > 90.0) {
+		log.Printf("[CRITICAL] NODE [%s] IS OVERHEATING", nodeId)
+	}
 }
 
 // Safely reads a node's current state
@@ -54,4 +79,13 @@ func (sm *StateManager) Get(nodeId string) (*NodeState, bool) {
 
 	state, exist := sm.nodes[nodeId]
 	return state, exist
+}
+
+func calcAvg(s []TempReading) float32 {
+	var totalTemp float32 = 0.0
+	for _, temp := range s {
+		totalTemp += temp.LatestTemp 
+	}
+
+	return totalTemp / float32(len(s))
 }
